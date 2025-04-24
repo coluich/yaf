@@ -1,6 +1,6 @@
 # start $ENV:windir/System32/cmd.exe
 $imageUrl = "https://thumbs.dreamstime.com/b/man-screams-fear-horror-pop-art-retro-vector-illustration-103789731.jpg"
-$outputPath = "$env:USERPROFILE\Pictures\sfondo.jpg"
+$outputPath = "$env:USERPROFILE\sfondo.jpg"
 Invoke-WebRequest -Uri $imageUrl -OutFile $outputPath
 
 while (!(Test-Path $outputPath)) {
