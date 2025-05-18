@@ -2,7 +2,7 @@
 # This script is used to create some cool alias on bashrc file and also to install some cool tools included figlet
 
 sudo apt install git lolcat figlet lsd bat neovim cmatrix -y
-sudo git clone https://github.com/xero/figlet-fonts /usr/share
+sudo git clone https://github.com/xero/figlet-fonts /usr/share/figlet-fonts
 sudo mv /usr/share/figlet-fonts/* /usr/share/figlet 
 sudo rm -rf /usr/share/figlet-fonts
 
