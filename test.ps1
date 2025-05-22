@@ -6,7 +6,6 @@ function Set-Wallpaper {
     $RegKeyPath = "HKCU:\Control Panel\Desktop"
     Set-ItemProperty -Path $RegKeyPath -Name Wallpaper -Value $path
     rundll32.exe user32.dll, UpdatePerUserSystemParameters 1, True
-    Start-Sleep -Milliseconds 300
     Add-Type -TypeDefinition @'
 using System.Runtime.InteropServices;
 public class Wallpaper {
@@ -24,21 +23,43 @@ $success = $false
 while ($attempts -lt $maxAttempts -and -not $success) {
     $attempts++
     
-    # Scarica o riscarica il file ogni tentativo
+    # Elimina il file esistente se presente
     if (Test-Path -Path $outputPath) {
         Remove-Item -Path $outputPath -Force
     }
     
-    try {
-        Invoke-WebRequest -Uri $imageUrl -OutFile $outputPath
-        Start-Sleep -Seconds 1
-        
-        if (Test-Path -Path $outputPath) {
-            Set-Wallpaper -path $outputPath
-            $success = $true
+    # Avvia il download in background con job
+    $job = Start-Job -ScriptBlock {
+        param($url, $path)
+        try {
+            Invoke-WebRequest -Uri $url -OutFile $path -ErrorAction Stop
+            return $true
+        } catch {
+            return $false
         }
+    } -ArgumentList $imageUrl, $outputPath
+    
+    # Attesa intelligente del completamento del job
+    $jobCompleted = $false
+    $timeout = 30  # timeout in secondi
+    $startTime = Get-Date
+    
+    while (-not $jobCompleted -and ((Get-Date) - $startTime).TotalSeconds -lt $timeout) {
+        if ($job.State -ne 'Running') {
+            $jobCompleted = $true
+        }
+        Start-Sleep -Milliseconds 100
     }
-    catch {
-        Start-Sleep -Seconds 2
+    
+    # Verifica risultato
+    if ($jobCompleted -and (Receive-Job -Job $job) -and (Test-Path -Path $outputPath)) {
+        Set-Wallpaper -path $outputPath
+        $success = $true
     }
+    
+    # Pulizia job
+    Remove-Job -Job $job -Force
 }
+
+# Pulizia finale
+Get-Job | Remove-Job -Force
